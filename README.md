@@ -53,3 +53,7 @@ VCF files are processed only within your browser and are never uploaded to any e
 | `phase-blocks.js` | Phase-block segmentation and statistics (N50, NG50, etc.) |
 | `vendor/pako.min.js` | [pako](https://github.com/nodeca/pako), used to decompress `.vcf.gz` (MIT / Zlib license) |
 | `assets/PhaseLadderPlot_icon.png` | Icon |
+
+## Citation
+
+Details will be described in a forthcoming bioRxiv preprint (Qian E, Kosaki K, Miya F. bioRxiv 2026). A link will be added here once it is available.
