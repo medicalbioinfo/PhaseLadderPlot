@@ -1,0 +1,2502 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phase Ladder Plot</title>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #4b5563;
+      --line: #d1d5db;
+      --panel: #f8fafc;
+      --surface: #ffffff;
+      --summary-bg: #ffffff;
+      --orange: #c2410c;
+      --blue: #0284c7;
+      --block-1: #a7f3d0;
+      --block-2: #fb7185;
+      --gray: #5f6368;
+      --drop: #e0f2fe;
+    }
+
+    * { box-sizing: border-box; }
+
+    body.dark-mode {
+      --ink: #f9fafb;
+      --muted: #cbd5e1;
+      --line: #334155;
+      --panel: #0f172a;
+      --surface: #111827;
+      --summary-bg: #111827;
+      --drop: #0f3a5c;
+      background: #020617;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--surface);
+    }
+
+    header {
+      position: relative;
+      padding: 28px 32px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      margin: 0 0 8px;
+    }
+
+    .brand img {
+      width: 42px;
+      height: auto;
+      object-fit: contain;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .brand-title {
+      font-size: 42px;
+      line-height: 0.92;
+      font-weight: 800;
+      letter-spacing: 0;
+      color: #000000;
+    }
+
+    body.dark-mode .brand-title {
+      color: #ffffff;
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 24px;
+      right: 32px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .theme-toggle input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch-track {
+      width: 46px;
+      height: 24px;
+      border-radius: 999px;
+      background: #cbd5e1;
+      border: 1px solid #94a3b8;
+      position: relative;
+      transition: background 0.18s ease, border-color 0.18s ease;
+      cursor: pointer;
+    }
+
+    .switch-track::after {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 2px;
+      top: 2px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.28);
+      transition: transform 0.18s ease;
+    }
+
+    .theme-toggle input:checked + .switch-track {
+      background: #334155;
+      border-color: #64748b;
+    }
+
+    .theme-toggle input:checked + .switch-track::after {
+      transform: translateX(22px);
+    }
+
+    header p {
+      margin: 0;
+      max-width: 980px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .top-note {
+      margin-top: 12px;
+      max-width: 980px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    body.dark-mode .top-note,
+    body.dark-mode .note,
+    body.dark-mode .stats,
+    body.dark-mode .message,
+    body.dark-mode .method-note,
+    body.dark-mode input[type="file"],
+    body.dark-mode input[type="number"],
+    body.dark-mode input[type="text"],
+    body.dark-mode select,
+    body.dark-mode textarea,
+    body.dark-mode .drop-zone {
+      background: #111827;
+      color: var(--muted);
+    }
+
+    body.dark-mode button.secondary {
+      background: #111827;
+      color: var(--ink);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 460px minmax(0, 1fr);
+      min-height: calc(100vh - 96px);
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      padding: 24px;
+      background: var(--panel);
+    }
+
+    section.plot-wrap {
+      padding: 24px;
+      overflow: auto;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin: 18px 0 6px;
+    }
+
+    input[type="file"], input[type="number"], input[type="text"], select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px 10px;
+      font: inherit;
+      background: white;
+      color: var(--ink);
+    }
+
+    input[type="text"] {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      text-transform: uppercase;
+    }
+
+    textarea {
+      min-height: 168px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      overflow: auto;
+      white-space: pre;
+    }
+
+    textarea[readonly] {
+      color: #374151;
+      background: #f9fafb;
+      cursor: default;
+    }
+
+    button {
+      margin-top: 16px;
+      width: 100%;
+      border: 0;
+      border-radius: 6px;
+      padding: 11px 12px;
+      font: inherit;
+      font-weight: 700;
+      color: white;
+      background: var(--ink);
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: white;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .button-note {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .drop-zone {
+      border: 1.5px dashed #94a3b8;
+      border-radius: 8px;
+      padding: 18px;
+      background: white;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.45;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .drop-zone strong {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .drop-zone .upload-privacy-note {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .drop-zone.dragging {
+      border-color: #0284c7;
+      background: var(--drop);
+    }
+
+    .file-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin: 12px 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .checkbox-row input {
+      margin-top: 2px;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .region-grid {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .region-grid.is-visible {
+      display: grid;
+    }
+
+    .color-label {
+      margin: 0 0 5px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .note, .stats, .message, .method-note {
+      margin-top: 18px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--summary-bg);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .method-note {
+      font-size: 12.5px;
+    }
+
+    .method-note strong {
+      color: var(--ink);
+    }
+
+    .method-note p {
+      margin: 0 0 7px;
+    }
+
+    .method-note p:last-child {
+      margin-bottom: 0;
+    }
+
+    .message {
+      display: none;
+      border-color: #f97316;
+      color: #9a3412;
+      background: #fff7ed;
+    }
+
+    .stats strong { color: var(--ink); }
+
+    .plot-summary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 5px 12px;
+      margin: 24px 0 14px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--summary-bg);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    #inputWarning[hidden] { display: none; }
+
+    .plot-summary strong { color: var(--ink); }
+
+    .summary-file {
+      flex-basis: 100%;
+      color: var(--ink);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .summary-row {
+      flex-basis: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px 14px;
+    }
+
+    .summary-item,
+    .summary-note {
+      white-space: nowrap;
+    }
+
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .summary-warning {
+      flex-basis: 100%;
+      color: #9a3412;
+    }
+
+    .plot-frame {
+      position: relative;
+      width: 100%;
+      min-width: 900px;
+    }
+
+    .print-brand {
+      display: none;
+    }
+
+    .plot-status {
+      display: none;
+      position: absolute;
+      z-index: 2;
+      top: 12px;
+      left: 12px;
+      max-width: min(560px, calc(100% - 24px));
+      padding: 10px 12px;
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      background: rgba(239, 246, 255, 0.96);
+      color: #1e3a8a;
+      font-size: 13px;
+      line-height: 1.45;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+    }
+
+    .plot-status.is-active {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+      border: 2px solid #bfdbfe;
+      border-top-color: #0284c7;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    svg {
+      width: 100%;
+      min-width: 0;
+      height: auto;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin: 0 0 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 34px;
+      height: 0;
+      border-top: 3px solid currentColor;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    .box-swatch {
+      display: inline-block;
+      width: 20px;
+      height: 13px;
+      border: 1px solid #9ca3af;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+
+    @media print {
+      @page {
+        size: landscape;
+        margin: 12mm;
+      }
+
+      body {
+        background: white;
+        color: #111827;
+      }
+
+      * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      aside {
+        display: none;
+      }
+
+      header {
+        display: none;
+      }
+
+      .theme-toggle {
+        display: none;
+      }
+
+      header p,
+      .top-note {
+        display: none;
+      }
+
+      main {
+        display: block;
+        min-height: auto;
+      }
+
+      section.plot-wrap {
+        padding: 0 2mm;
+        overflow: visible;
+      }
+
+      .print-brand {
+        display: none !important;
+      }
+
+      .legend {
+        gap: 6px;
+        margin-top: 8px;
+        margin-bottom: 5px;
+        font-size: 8px;
+        page-break-after: avoid;
+      }
+
+      .plot-summary {
+        gap: 1px 6px;
+        margin-top: 10px;
+        margin-bottom: 8px;
+        padding: 4px 6px;
+        font-size: 7.2px;
+        line-height: 1.15;
+        max-width: 100%;
+        overflow: hidden;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        page-break-after: avoid;
+      }
+
+      .summary-item,
+      .summary-note {
+        white-space: normal;
+      }
+
+      .summary-note {
+        display: none;
+      }
+
+      .summary-file,
+      .summary-warning {
+        flex-basis: 100%;
+      }
+
+      .plot-status {
+        display: none !important;
+      }
+
+      .button-note {
+        display: none;
+      }
+
+      .plot-frame {
+        min-width: 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      svg {
+        width: 100%;
+        min-width: 0;
+        max-height: 154mm;
+        border: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="assets/PhaseLadderPlot_icon.png" alt="" aria-hidden="true">
+      <div class="brand-title">Phase Ladder Plot</div>
+    </div>
+    <label class="theme-toggle" for="darkModeToggle">
+      <span>Dark mode</span>
+      <input id="darkModeToggle" type="checkbox">
+      <span class="switch-track" aria-hidden="true"></span>
+    </label>
+    <p>A browser for visualizing haplotype phasing structure from a VCF file.</p>
+  </header>
+
+  <main>
+    <aside>
+      <label for="vcfFile">VCF file</label>
+      <div id="dropZone" class="drop-zone">
+        <strong>Drag and drop a hg38 (GRCh38) VCF here</strong>
+        Plain text .vcf and gzipped .vcf.gz are read locally in this browser tab.
+        <div class="upload-privacy-note">(VCF data will never be uploaded to any external server.)</div>
+        <div class="file-row">
+          <input id="vcfFile" type="file" accept=".vcf,.vcf.gz,.gz,.txt,application/gzip,application/octet-stream">
+        </div>
+      </div>
+
+      <label>Display options</label>
+      <div class="checkbox-row">
+        <input id="showSnpTicks" type="checkbox">
+        <span>Add SNP side ticks. Unphased heterozygous SNPs are drawn on the left, phased heterozygous SNPs on the right.</span>
+      </div>
+      <div class="checkbox-row">
+        <input id="includeNonPassFilter" type="checkbox">
+        <span>Include VCF records whose column 7 FILTER value is not PASS, including FILTER=. (filters not applied).</span>
+      </div>
+      <div class="checkbox-row">
+        <input id="includeSexChromosomes" type="checkbox">
+        <span>Show chromosomes X and Y. By default, only autosomes are shown.</span>
+      </div>
+      <div class="checkbox-row">
+        <input id="useRegionView" type="checkbox">
+        <span>Show only a selected region.</span>
+      </div>
+      <div id="regionControls" class="region-grid" aria-hidden="true">
+        <div>
+          <div class="color-label">Chromosome</div>
+          <select id="regionChrom">
+            <option value="chr1">chr1</option>
+          </select>
+        </div>
+        <div>
+          <div class="color-label">Start position</div>
+          <input id="regionStartPos" type="number" min="0" step="1" value="0">
+        </div>
+        <div>
+          <div class="color-label">End position</div>
+          <input id="regionEndPos" type="number" min="1" step="1" value="">
+        </div>
+      </div>
+
+      <label>Haplotype block colors</label>
+      <div class="color-grid">
+        <div>
+          <div class="color-label">Block color 1</div>
+          <input id="blockColor1" type="text" value="#A7F3D0" spellcheck="false">
+        </div>
+        <div>
+          <div class="color-label">Block color 2</div>
+          <input id="blockColor2" type="text" value="#FB7185" spellcheck="false">
+        </div>
+      </div>
+
+      <label>SNP tick colors</label>
+      <div class="color-grid">
+        <div>
+          <div class="color-label">Unphased tick</div>
+          <input id="unphasedColor" type="text" value="#C2410C" spellcheck="false">
+        </div>
+        <div>
+          <div class="color-label">Phased tick</div>
+          <input id="phasedColor" type="text" value="#0284C7" spellcheck="false">
+        </div>
+      </div>
+
+      <button id="savePdfBtn" class="secondary">Save as PDF</button>
+      <p class="button-note">PDF files may reach several MB, especially for whole-genome plots.</p>
+      <button id="savePngBtn" class="secondary">Save as PNG</button>
+      <details class="method-note" open>
+        <summary><strong>Input requirements</strong></summary>
+        <p>Use an hg38 (GRCh38) VCF with confirmed phasing, phased GT, and valid PS. VCFs already phased by other tools can be used directly. If phasing has not been performed, use suitable software such as WhatsHap with the corresponding alignments and reference to obtain a phased VCF. Conventional short-read PS values can describe local phasing; PS alone does not establish long-range continuity.</p>
+      </details>
+
+      <div id="message" class="message"></div>
+
+      <label for="excluded">Excluded regions TSV</label>
+      <textarea id="excluded" readonly aria-readonly="true" wrap="off"></textarea>
+
+      <div class="method-note">
+        <p>Minimum number of phased heterozygous SNVs per phase-block segment: 2 (singleton segments are excluded).</p>
+        <p>Adjacent segments on each chromosome are drawn in alternating colors, even when separated by a white gap. A returning PS starts a new segment. Same-PS blocks are split at excluded regions.</p>
+        <p>By default, only VCF records with FILTER=PASS are used. If the option to include non-PASS records is selected, the statistics are recalculated and the plot is redrawn.</p>
+        <p>Statistics are limited to chromosomes 1–22 outside excluded regions. Block size is the number of SNVs in a segment; block length is calculated as last POS − first POS. N50 uses total block length; NG50 uses the sum of the full lengths of chromosomes represented by these blocks.</p>
+        <p>In whole-chromosome view, schematic telomere caps are placed at the inner edges of the terminal excluded regions. In selected-region view, the interval is cropped and zoomed without schematic telomere caps.</p>
+      </div>
+
+      <div class="note">
+        <strong>Privacy direction</strong><br>
+        VCF files selected here are processed locally in this browser and will never be uploaded to any external server.
+      </div>
+    </aside>
+
+    <section class="plot-wrap">
+      <div id="inputWarning" class="plot-summary summary-warning" role="alert" hidden></div>
+      <div class="legend">
+        <span id="legendUnphased" style="color: var(--orange);"><span class="swatch"></span>Unphased 0/1</span>
+        <span id="legendPhased" style="color: var(--blue);"><span class="swatch"></span>Phased 0|1</span>
+        <span><span id="legendBlock1" class="box-swatch" style="background: var(--block-1);"></span>Block 1</span>
+        <span><span id="legendBlock2" class="box-swatch" style="background: var(--block-2);"></span>Block 2</span>
+        <span><span class="box-swatch" style="background: var(--gray);"></span>Excluded</span>
+      </div>
+      <div class="plot-frame">
+        <div id="plotStatus" class="plot-status"><span class="spinner"></span><span id="plotStatusText">Waiting for a VCF file.</span></div>
+        <svg id="plot" viewBox="0 0 1200 700" role="img" aria-label="Phase Ladder Plot"></svg>
+      </div>
+      <div id="plotSummary" class="plot-summary" aria-live="polite">No data loaded. Select a VCF file to draw a Phase Ladder Plot.</div>
+      <div class="print-brand" aria-hidden="true">
+        <img src="assets/PhaseLadderPlot_icon.png" alt="">
+        <span>Phase Ladder Plot</span>
+      </div>
+    </section>
+  </main>
+
+  <script src="vendor/pako.min.js"></script>
+  <script src="phase-blocks.js"></script>
+  <script>
+    const DEFAULT_EXCLUDED_TSV = `chrom	start	end	type	source
+chr1	122026459	122224535	centromere	centromeres.txt.gz
+chr1	122224635	122503147	centromere	centromeres.txt.gz
+chr1	122503247	124785432	centromere	centromeres.txt.gz
+chr1	124785532	124849129	centromere	centromeres.txt.gz
+chr1	124849229	124932724	centromere	centromeres.txt.gz
+chr10	39686682	39935900	centromere	centromeres.txt.gz
+chr10	39936000	41497440	centromere	centromeres.txt.gz
+chr10	41497540	41545720	centromere	centromeres.txt.gz
+chr10	41545820	41593521	centromere	centromeres.txt.gz
+chr11	51078348	51090317	centromere	centromeres.txt.gz
+chr11	51090417	54342399	centromere	centromeres.txt.gz
+chr11	54342499	54425074	centromere	centromeres.txt.gz
+chr12	34769407	34816611	centromere	centromeres.txt.gz
+chr12	34835295	37185252	centromere	centromeres.txt.gz
+chr13	16000000	16022537	centromere	centromeres.txt.gz
+chr13	16022637	16110659	centromere	centromeres.txt.gz
+chr13	16110759	16164892	centromere	centromeres.txt.gz
+chr13	16164992	16228527	centromere	centromeres.txt.gz
+chr13	16228627	16249297	centromere	centromeres.txt.gz
+chr13	16249397	16256067	centromere	centromeres.txt.gz
+chr13	16256167	16259412	centromere	centromeres.txt.gz
+chr13	16259512	16282073	centromere	centromeres.txt.gz
+chr13	16282173	17416384	centromere	centromeres.txt.gz
+chr13	17416484	17416824	centromere	centromeres.txt.gz
+chr13	17416924	17417264	centromere	centromeres.txt.gz
+chr13	17417364	17418562	centromere	centromeres.txt.gz
+chr13	17418662	18051248	centromere	centromeres.txt.gz
+chr14	16000000	16022537	centromere	centromeres.txt.gz
+chr14	16140627	16228649	centromere	centromeres.txt.gz
+chr14	16228749	16282882	centromere	centromeres.txt.gz
+chr14	16282982	16346517	centromere	centromeres.txt.gz
+chr14	16346617	16367287	centromere	centromeres.txt.gz
+chr14	16367387	16374057	centromere	centromeres.txt.gz
+chr14	16374157	16377402	centromere	centromeres.txt.gz
+chr14	16377502	16400063	centromere	centromeres.txt.gz
+chr14	16404448	17538659	centromere	centromeres.txt.gz
+chr14	17538759	17539099	centromere	centromeres.txt.gz
+chr14	17539199	17539539	centromere	centromeres.txt.gz
+chr14	17539639	17540837	centromere	centromeres.txt.gz
+chr14	17540937	18173523	centromere	centromeres.txt.gz
+chr15	17083673	17498951	centromere	centromeres.txt.gz
+chr15	17499051	18355008	centromere	centromeres.txt.gz
+chr15	18355108	19725254	centromere	centromeres.txt.gz
+chr16	36311158	36334460	centromere	centromeres.txt.gz
+chr16	36337666	38265669	centromere	centromeres.txt.gz
+chr17	22813679	23194918	centromere	centromeres.txt.gz
+chr17	23195018	26566633	centromere	centromeres.txt.gz
+chr17	26566733	26616164	centromere	centromeres.txt.gz
+chr18	15460899	15780377	centromere	centromeres.txt.gz
+chr18	15797855	20561439	centromere	centromeres.txt.gz
+chr18	20603247	20696289	centromere	centromeres.txt.gz
+chr18	20696389	20736025	centromere	centromeres.txt.gz
+chr18	20736125	20813083	centromere	centromeres.txt.gz
+chr18	20839797	20861206	centromere	centromeres.txt.gz
+chr19	24498980	24552652	centromere	centromeres.txt.gz
+chr19	24552752	24891256	centromere	centromeres.txt.gz
+chr19	24908689	27190874	centromere	centromeres.txt.gz
+chr2	92188145	94090557	centromere	centromeres.txt.gz
+chr20	26436232	26586955	centromere	centromeres.txt.gz
+chr20	26608145	28494539	centromere	centromeres.txt.gz
+chr20	28508997	28556953	centromere	centromeres.txt.gz
+chr20	28648108	28728874	centromere	centromeres.txt.gz
+chr20	29125793	29204668	centromere	centromeres.txt.gz
+chr20	29917404	30038348	centromere	centromeres.txt.gz
+chr21	10864560	10887097	centromere	centromeres.txt.gz
+chr21	10887197	10975219	centromere	centromeres.txt.gz
+chr21	10975319	11029452	centromere	centromeres.txt.gz
+chr21	11029552	11093087	centromere	centromeres.txt.gz
+chr21	11093187	11113857	centromere	centromeres.txt.gz
+chr21	11113957	11120627	centromere	centromeres.txt.gz
+chr21	11120727	11123972	centromere	centromeres.txt.gz
+chr21	11124072	11146633	centromere	centromeres.txt.gz
+chr21	11146733	12280944	centromere	centromeres.txt.gz
+chr21	12281044	12281384	centromere	centromeres.txt.gz
+chr21	12281484	12281824	centromere	centromeres.txt.gz
+chr21	12281924	12283122	centromere	centromeres.txt.gz
+chr21	12283222	12915808	centromere	centromeres.txt.gz
+chr22	12954788	12977325	centromere	centromeres.txt.gz
+chr22	13021422	13109444	centromere	centromeres.txt.gz
+chr22	13109544	13163677	centromere	centromeres.txt.gz
+chr22	13163777	13227312	centromere	centromeres.txt.gz
+chr22	13227412	13248082	centromere	centromeres.txt.gz
+chr22	13248182	13254852	centromere	centromeres.txt.gz
+chr22	13254952	13258197	centromere	centromeres.txt.gz
+chr22	13258297	13280858	centromere	centromeres.txt.gz
+chr22	13285243	14419454	centromere	centromeres.txt.gz
+chr22	14419554	14419894	centromere	centromeres.txt.gz
+chr22	14419994	14420334	centromere	centromeres.txt.gz
+chr22	14420434	14421632	centromere	centromeres.txt.gz
+chr22	14421732	15054318	centromere	centromeres.txt.gz
+chr3	90772458	91233586	centromere	centromeres.txt.gz
+chr3	91233686	91247622	centromere	centromeres.txt.gz
+chr3	91553419	93655574	centromere	centromeres.txt.gz
+chr4	49712061	51743951	centromere	centromeres.txt.gz
+chr5	46485900	46569062	centromere	centromeres.txt.gz
+chr5	46569162	46796725	centromere	centromeres.txt.gz
+chr5	46796825	47061288	centromere	centromeres.txt.gz
+chr5	47106994	47153339	centromere	centromeres.txt.gz
+chr5	47153439	47296069	centromere	centromeres.txt.gz
+chr5	47309184	49591369	centromere	centromeres.txt.gz
+chr5	49667531	49721203	centromere	centromeres.txt.gz
+chr5	49721303	50059807	centromere	centromeres.txt.gz
+chr6	58553888	59829934	centromere	centromeres.txt.gz
+chr7	58169653	60828234	centromere	centromeres.txt.gz
+chr7	61377788	61528020	centromere	centromeres.txt.gz
+chr8	44033744	45877265	centromere	centromeres.txt.gz
+chr9	43389635	45518558	centromere	centromeres.txt.gz
+chrX	58605579	62412542	centromere	centromeres.txt.gz
+chrY	10316944	10544039	centromere	centromeres.txt.gz
+chr1	0	10000	telomere	gap.txt.gz
+chr1	125184587	143184587	heterochromatin	gap.txt.gz
+chr1	248946422	248956422	telomere	gap.txt.gz
+chr10	0	10000	telomere	gap.txt.gz
+chr10	133787422	133797422	telomere	gap.txt.gz
+chr11	0	10000	telomere	gap.txt.gz
+chr11	50871348	51078348	heterochromatin	gap.txt.gz
+chr11	135076622	135086622	telomere	gap.txt.gz
+chr12	0	10000	telomere	gap.txt.gz
+chr12	133265309	133275309	telomere	gap.txt.gz
+chr13	0	10000	telomere	gap.txt.gz
+chr13	10000	16000000	short_arm	gap.txt.gz
+chr13	18051248	18071248	heterochromatin	gap.txt.gz
+chr13	114354328	114364328	telomere	gap.txt.gz
+chr14	0	10000	telomere	gap.txt.gz
+chr14	10000	16000000	short_arm	gap.txt.gz
+chr14	107033718	107043718	telomere	gap.txt.gz
+chr15	0	10000	telomere	gap.txt.gz
+chr15	10000	17000000	short_arm	gap.txt.gz
+chr15	101981189	101991189	telomere	gap.txt.gz
+chr16	0	10000	telomere	gap.txt.gz
+chr16	38280682	46280682	heterochromatin	gap.txt.gz
+chr16	90328345	90338345	telomere	gap.txt.gz
+chr17	0	10000	telomere	gap.txt.gz
+chr17	83247441	83257441	telomere	gap.txt.gz
+chr18	0	10000	telomere	gap.txt.gz
+chr18	80363285	80373285	telomere	gap.txt.gz
+chr19	0	10000	telomere	gap.txt.gz
+chr19	24448980	24498980	heterochromatin	gap.txt.gz
+chr19	27190874	27240874	heterochromatin	gap.txt.gz
+chr19	58607616	58617616	telomere	gap.txt.gz
+chr2	0	10000	telomere	gap.txt.gz
+chr2	90402511	91402511	heterochromatin	gap.txt.gz
+chr2	242183529	242193529	telomere	gap.txt.gz
+chr20	0	10000	telomere	gap.txt.gz
+chr20	64434167	64444167	telomere	gap.txt.gz
+chr21	0	10000	telomere	gap.txt.gz
+chr21	10000	5010000	short_arm	gap.txt.gz
+chr21	10814560	10864560	heterochromatin	gap.txt.gz
+chr21	46699983	46709983	telomere	gap.txt.gz
+chr22	0	10000	telomere	gap.txt.gz
+chr22	10000	10510000	short_arm	gap.txt.gz
+chr22	50808468	50818468	telomere	gap.txt.gz
+chr3	0	10000	telomere	gap.txt.gz
+chr3	198285559	198295559	telomere	gap.txt.gz
+chr4	0	10000	telomere	gap.txt.gz
+chr4	190204555	190214555	telomere	gap.txt.gz
+chr5	0	10000	telomere	gap.txt.gz
+chr5	181528259	181538259	telomere	gap.txt.gz
+chr6	0	10000	telomere	gap.txt.gz
+chr6	170795979	170805979	telomere	gap.txt.gz
+chr7	0	10000	telomere	gap.txt.gz
+chr7	62456779	62506779	heterochromatin	gap.txt.gz
+chr7	159335973	159345973	telomere	gap.txt.gz
+chr8	0	10000	telomere	gap.txt.gz
+chr8	145128636	145138636	telomere	gap.txt.gz
+chr9	0	10000	telomere	gap.txt.gz
+chr9	45518558	60518558	heterochromatin	gap.txt.gz
+chr9	138384717	138394717	telomere	gap.txt.gz
+chrX	0	10000	telomere	gap.txt.gz
+chrX	156030895	156040895	telomere	gap.txt.gz
+chrY	0	10000	telomere	gap.txt.gz
+chrY	26673214	56673214	heterochromatin	gap.txt.gz
+chrY	57217415	57227415	telomere	gap.txt.gz`;
+    const fallbackColors = {
+      unphased: "#C2410C",
+      phased: "#0284C7",
+      block1: "#A7F3D0",
+      block2: "#FB7185",
+      gray: "#5F6368",
+      outline: "#9CA3AF",
+      text: "#111827"
+    };
+    const MIN_VARIANTS = 2;
+
+    let records = [];
+    let contigs = new Map();
+    let loadedFileName = "";
+    let loadedFileObject = null;
+    let parseSummary = blankParseSummary();
+    let headerContigLengths = new Map();
+    let statisticsCache = null;
+    let orderedPhasedCache = null;
+    let plotAnalysisCache = null;
+
+    function blankParseSummary() {
+      return {
+        headerContigs: 0,
+        sourceDragen: false,
+        sampleName: "",
+        skippedDuplicateSnv: 0,
+        reorderedInput: false,
+        variantLines: 0,
+        biallelicSnvLines: 0,
+        hetSnv: 0,
+        phasedHetSnv: 0,
+        phasedHetSnvWithPs: 0,
+        phasedHetSnvWithoutPs: 0,
+        unphasedHetSnv: 0,
+        autosomeInputRows: 0,
+        autosomeFilterCounts: Object.create(null),
+        autosomeVariantLines: 0,
+        autosomeExcludedVariantLines: 0,
+        autosomeExcludedBiallelicSnvLines: 0,
+        autosomeBiallelicSnvLines: 0,
+        autosomeHetSnv: 0,
+        autosomePhasedHetSnv: 0,
+        autosomePhasedHetSnvWithPs: 0,
+        autosomePhasedHetSnvWithoutPs: 0,
+        autosomeUnphasedHetSnv: 0,
+        skippedNoSample: 0,
+        skippedOtherGt: 0,
+        skippedNonSnv: 0,
+        skippedNonPassFilter: 0,
+        autosomeSkippedNonPassFilter: 0
+      };
+    }
+
+    function canonicalChrom(chrom) {
+      const c = chrom.replace(/^chr/i, "");
+      if (/^([1-9]|1[0-9]|2[0-2]|X|Y)$/i.test(c)) {
+        return "chr" + c.toUpperCase();
+      }
+      return chrom;
+    }
+
+    function displayChrom(chrom) {
+      return chrom.replace(/^chr/i, "");
+    }
+
+    function readHex(id, fallback) {
+      const input = document.getElementById(id);
+      const value = input.value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(value)) {
+        input.value = value.toUpperCase();
+        return value.toUpperCase();
+      }
+      return fallback;
+    }
+
+    function currentColors() {
+      return {
+        unphased: readHex("unphasedColor", fallbackColors.unphased),
+        phased: readHex("phasedColor", fallbackColors.phased),
+        block1: readHex("blockColor1", fallbackColors.block1),
+        block2: readHex("blockColor2", fallbackColors.block2),
+        gray: fallbackColors.gray,
+        outline: fallbackColors.outline,
+        text: fallbackColors.text
+      };
+    }
+
+    function applyColorControls() {
+      const c = currentColors();
+      document.documentElement.style.setProperty("--orange", c.unphased);
+      document.documentElement.style.setProperty("--blue", c.phased);
+      document.documentElement.style.setProperty("--block-1", c.block1);
+      document.documentElement.style.setProperty("--block-2", c.block2);
+      document.getElementById("legendUnphased").style.color = c.unphased;
+      document.getElementById("legendPhased").style.color = c.phased;
+      document.getElementById("legendBlock1").style.background = c.block1;
+      document.getElementById("legendBlock2").style.background = c.block2;
+      return c;
+    }
+
+    function setMessage(text) {
+      const message = document.getElementById("message");
+      message.textContent = text;
+      message.style.display = text ? "block" : "none";
+    }
+
+    function setStatus(text) {
+      const status = document.getElementById("plotStatus");
+      const statusText = document.getElementById("plotStatusText");
+      statusText.textContent = text;
+      status.classList.toggle("is-active", Boolean(text));
+    }
+
+    function nextFrame() {
+      return new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    function parseInfoContig(line) {
+      const m = line.match(/##contig=<(.+)>/);
+      if (!m) return;
+      const parts = Object.fromEntries(m[1].split(",").map(p => {
+        const idx = p.indexOf("=");
+        return [p.slice(0, idx), p.slice(idx + 1)];
+      }));
+      if (parts.ID && parts.length) {
+        contigs.set(canonicalChrom(parts.ID), Number(parts.length));
+        headerContigLengths.set(canonicalChrom(parts.ID), Number(parts.length));
+      }
+    }
+
+    function resetParsedVcf() {
+      records = [];
+      contigs = new Map();
+      parseSummary = blankParseSummary();
+      headerContigLengths = new Map();
+      statisticsCache = null;
+      orderedPhasedCache = null;
+      plotAnalysisCache = null;
+    }
+
+    function useNonPassFilterRecords() {
+      return document.getElementById("includeNonPassFilter").checked;
+    }
+
+    function isPassFilterValue(value) {
+      return String(value || "").trim() === "PASS";
+    }
+
+    function isAcgtBaseCode(code) {
+      return code === 65 || code === 67 || code === 71 || code === 84;
+    }
+
+    function sampleFormatField(sample, index) {
+      if (index < 0) return "";
+      let start = 0;
+      for (let i = 0; i < index; i++) {
+        start = sample.indexOf(":", start);
+        if (start < 0) return "";
+        start++;
+      }
+      const end = sample.indexOf(":", start);
+      return sample.slice(start, end < 0 ? sample.length : end);
+    }
+
+    class UnsortedVcfError extends Error {}
+
+    function processVcfLine(line, state) {
+      if (!line) return;
+      if (line.charCodeAt(0) === 35) {
+        if (line.startsWith("##contig=")) {
+          parseInfoContig(line);
+          parseSummary.headerContigs = contigs.size;
+        } else if (line.startsWith("#CHROM")) {
+          const header = line.split("\t");
+          state.sampleIndex = header.length > 9 ? 9 : -1;
+          parseSummary.sampleName = header[9] || "";
+        } else if (/^##(?:source=.*DRAGEN|DRAGENCommandLine)/i.test(line)) {
+          parseSummary.sourceDragen = true;
+        }
+        return;
+      }
+      parseSummary.variantLines++;
+      if (state.sampleIndex < 9) {
+        parseSummary.skippedNoSample++;
+        return;
+      }
+      // Only the first sample is used; skip INFO and later samples without splitting them.
+      const tabs = state.tabs || (state.tabs = new Int32Array(9));
+      let tab = -1;
+      for (let i = 0; i < 9; i++) {
+        tab = line.indexOf("\t", tab + 1);
+        if (tab < 0) {
+          parseSummary.skippedNoSample++;
+          return;
+        }
+        tabs[i] = tab;
+      }
+      const rawChrom = line.slice(0, tabs[0]);
+      if (state.rawChrom !== rawChrom) {
+        state.rawChrom = rawChrom;
+        state.chrom = canonicalChrom(rawChrom);
+        state.autosome = isAutosome(state.chrom);
+      }
+      const chrom = state.chrom;
+      const autosome = state.autosome;
+      const filterValue = line.slice(tabs[5] + 1, tabs[6]);
+      if (autosome) {
+        parseSummary.autosomeInputRows++;
+        const key = filterValue || ".";
+        parseSummary.autosomeFilterCounts[key] = (parseSummary.autosomeFilterCounts[key] || 0) + 1;
+      }
+      if (state.includeNonPass === undefined) state.includeNonPass = useNonPassFilterRecords();
+      if (!state.includeNonPass && !isPassFilterValue(filterValue)) {
+        parseSummary.skippedNonPassFilter++;
+        if (autosome) parseSummary.autosomeSkippedNonPassFilter++;
+        return;
+      }
+      if (autosome) parseSummary.autosomeVariantLines++;
+      const pos = Number(line.slice(tabs[0] + 1, tabs[1]));
+      if (!Number.isFinite(pos)) return;
+      if (!state.excludedMap) {
+        state.excludedMap = excludedRegionsByChrom(parseExcluded(document.getElementById("excluded").value));
+      }
+      const excluded = inExcluded({ chrom, pos }, state.excludedMap);
+      if (autosome && excluded) parseSummary.autosomeExcludedVariantLines++;
+      if (tabs[3] - tabs[2] !== 2 || tabs[4] - tabs[3] !== 2 ||
+          !isAcgtBaseCode(line.charCodeAt(tabs[2] + 1)) ||
+          !isAcgtBaseCode(line.charCodeAt(tabs[3] + 1))) {
+        parseSummary.skippedNonSnv++;
+        return;
+      }
+      if (state.previousChrom === chrom) {
+        if (state.previousSnvPos > pos) throw new UnsortedVcfError(`Unsorted SNV positions: ${chrom}:${pos}`);
+        if (state.previousSnvPos === pos) {
+          parseSummary.skippedDuplicateSnv++;
+          return;
+        }
+      } else {
+        // Check chromosome re-entry only when the chromosome changes.
+        // Sorted input keeps the streaming path and never buffers rows for sorting.
+        if (!state.seenSnvChromosomes) state.seenSnvChromosomes = new Set();
+        if (state.seenSnvChromosomes.has(chrom)) throw new UnsortedVcfError(`Repeated chromosome group: ${chrom}`);
+        state.seenSnvChromosomes.add(chrom);
+      }
+      state.previousChrom = chrom;
+      state.previousSnvPos = pos;
+      parseSummary.biallelicSnvLines++;
+      if (autosome) {
+        parseSummary.autosomeBiallelicSnvLines++;
+        if (excluded) parseSummary.autosomeExcludedBiallelicSnvLines++;
+      }
+      const formatKey = line.slice(tabs[7] + 1, tabs[8]);
+      if (!state.formatIndexes) state.formatIndexes = new Map();
+      let indexes = state.formatIndexes.get(formatKey);
+      if (!indexes) {
+        const format = formatKey.split(":");
+        indexes = { gt: format.lastIndexOf("GT"), ps: format.lastIndexOf("PS") };
+        state.formatIndexes.set(formatKey, indexes);
+      }
+      const sampleStart = tabs[8] + 1;
+      const nextSample = line.indexOf("\t", sampleStart);
+      const sample = line.slice(sampleStart, nextSample < 0 ? line.length : nextSample);
+      const gt = sampleFormatField(sample, indexes.gt);
+      const phased = gt === "0|1" || gt === "1|0";
+      if (!phased && gt !== "0/1" && gt !== "1/0") {
+        parseSummary.skippedOtherGt++;
+        return;
+      }
+      const ps = sampleFormatField(sample, indexes.ps);
+      parseSummary.hetSnv++;
+      if (autosome) parseSummary.autosomeHetSnv++;
+      if (phased) {
+        parseSummary.phasedHetSnv++;
+        if (autosome) parseSummary.autosomePhasedHetSnv++;
+        if (ps && ps !== ".") {
+          parseSummary.phasedHetSnvWithPs++;
+          if (autosome) parseSummary.autosomePhasedHetSnvWithPs++;
+        } else {
+          parseSummary.phasedHetSnvWithoutPs++;
+          if (autosome) parseSummary.autosomePhasedHetSnvWithoutPs++;
+        }
+      } else {
+        parseSummary.unphasedHetSnv++;
+        if (autosome) parseSummary.autosomeUnphasedHetSnv++;
+      }
+      records.push({ chrom, pos, status: phased ? "phased" : "unphased", ps: phased ? ps : "" });
+      contigs.set(chrom, Math.max(contigs.get(chrom) || 0, pos));
+    }
+
+    async function parseVcf(text) {
+      resetParsedVcf();
+      const state = { sampleIndex: -1 };
+      let lineCount = 0;
+      let start = 0;
+
+      while (start < text.length) {
+        let end = text.indexOf("\n", start);
+        if (end === -1) end = text.length;
+        let line = text.slice(start, end);
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        start = end + 1;
+        lineCount++;
+        if (lineCount % 250000 === 0) {
+          setStatus(`Parsing VCF locally... ${parseSummary.variantLines.toLocaleString()} variant rows scanned; ${parseSummary.phasedHetSnvWithPs.toLocaleString()} phased heterozygous SNVs with PS found.`);
+          await nextFrame();
+        }
+
+        processVcfLine(line, state);
+      }
+      setStatus(`Finished parsing locally: ${parseSummary.variantLines.toLocaleString()} variant rows scanned; ${parseSummary.phasedHetSnvWithPs.toLocaleString()} phased heterozygous SNVs with PS found.`);
+    }
+
+    async function parseVcfStream(stream) {
+      resetParsedVcf();
+      const state = { sampleIndex: -1 };
+      const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
+      let remainder = "";
+      let lineCount = 0;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = remainder + value;
+        const lines = chunk.split("\n");
+        remainder = lines.pop() || "";
+        for (let line of lines) {
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          lineCount++;
+          processVcfLine(line, state);
+          if (lineCount % 250000 === 0) {
+            setStatus(`Parsing VCF locally... ${parseSummary.variantLines.toLocaleString()} variant rows scanned; ${parseSummary.phasedHetSnvWithPs.toLocaleString()} phased heterozygous SNVs with PS found.`);
+            await nextFrame();
+          }
+        }
+      }
+
+      if (remainder) {
+        if (remainder.endsWith("\r")) remainder = remainder.slice(0, -1);
+        processVcfLine(remainder, state);
+      }
+      setStatus(`Finished parsing locally: ${parseSummary.variantLines.toLocaleString()} variant rows scanned; ${parseSummary.phasedHetSnvWithPs.toLocaleString()} phased heterozygous SNVs with PS found.`);
+    }
+
+    async function consumeVcfTextChunk(text, state, tracker) {
+      const chunk = tracker.remainder + text;
+      const lines = chunk.split("\n");
+      tracker.remainder = lines.pop() || "";
+      for (let line of lines) {
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        tracker.lineCount++;
+        processVcfLine(line, state);
+        if (tracker.lineCount % 250000 === 0) {
+          setStatus(`Parsing VCF locally... ${parseSummary.variantLines.toLocaleString()} variant rows scanned; ${parseSummary.phasedHetSnvWithPs.toLocaleString()} phased heterozygous SNVs with PS found.`);
+          await nextFrame();
+        }
+      }
+    }
+
+    async function readBytes(file, start, end) {
+      return new Uint8Array(await file.slice(start, end).arrayBuffer());
+    }
+
+    function getUint16LE(bytes, offset) {
+      return bytes[offset] | (bytes[offset + 1] << 8);
+    }
+
+    function bgzfBlockSizeFromBytes(bytes, offset = 0) {
+      if (bytes.length - offset < 18 || bytes[offset] !== 0x1f ||
+          bytes[offset + 1] !== 0x8b || bytes[offset + 2] !== 8 || !(bytes[offset + 3] & 4)) return null;
+      const end = offset + 12 + getUint16LE(bytes, offset + 10);
+      if (end > bytes.length) return null;
+      for (let p = offset + 12; p + 4 <= end;) {
+        const len = getUint16LE(bytes, p + 2);
+        if (bytes[p] === 66 && bytes[p + 1] === 67 && len === 2 && p + 6 <= end) {
+          return getUint16LE(bytes, p + 4) + 1;
+        }
+        p += 4 + len;
+      }
+      return null;
+    }
+
+    async function bgzfBlockSizeAt(file, offset) {
+      const first = await readBytes(file, offset, Math.min(file.size, offset + 18));
+      if (first.length < 18) return null;
+      if (first[0] !== 0x1f || first[1] !== 0x8b || first[2] !== 8) return null;
+      if ((first[3] & 4) === 0) return null;
+      const xlen = getUint16LE(first, 10);
+      const headerEnd = offset + 12 + xlen;
+      const header = first.length >= 12 + xlen ? first : await readBytes(file, offset, Math.min(file.size, headerEnd));
+      if (header.length < 12 + xlen) return null;
+      let p = 12;
+      const extraEnd = 12 + xlen;
+      while (p + 4 <= extraEnd) {
+        const subfieldId = String.fromCharCode(header[p], header[p + 1]);
+        const subfieldLen = getUint16LE(header, p + 2);
+        if (subfieldId === "BC" && subfieldLen === 2 && p + 6 <= extraEnd) {
+          return getUint16LE(header, p + 4) + 1;
+        }
+        p += 4 + subfieldLen;
+      }
+      return null;
+    }
+
+    async function parseBgzfFile(file) {
+      if (!window.pako || typeof window.pako.inflateRaw !== "function") {
+        throw new Error("BGZF VCF detected, but the local gzip library is unavailable.");
+      }
+      resetParsedVcf();
+      const state = { sampleIndex: -1 };
+      const tracker = { remainder: "", lineCount: 0 };
+      let offset = 0;
+      let blockCount = 0;
+      let buffer = new Uint8Array(0);
+      let bufferOffset = 0;
+      const readWindow = 4 * 1024 * 1024;
+      // BGZF is concatenated gzip members; decompress each member separately.
+      let nativeInflate = typeof window.DecompressionStream === "function" &&
+        typeof window.Response === "function" && typeof window.Blob === "function" &&
+        typeof window.Blob.prototype.stream === "function";
+      if (nativeInflate) {
+        try { new DecompressionStream("gzip"); } catch (_) { nativeInflate = false; }
+      }
+      const pendingBlocks = [];
+      async function consumePendingBlocks() {
+        if (!pendingBlocks.length) return;
+        const texts = nativeInflate ? await Promise.all(pendingBlocks.map(block =>
+          new Response(new Blob([block]).stream().pipeThrough(new DecompressionStream("gzip"))).text()
+        )) : pendingBlocks.map(block => {
+          const start = 12 + getUint16LE(block, 10);
+          return window.pako.inflateRaw(block.subarray(start, block.length - 8), { to: "string" });
+        });
+        // Promise.all keeps member order, including records spanning members.
+        for (const text of texts) if (text) await consumeVcfTextChunk(text, state, tracker);
+        pendingBlocks.length = 0;
+      }
+
+      while (offset < file.size) {
+        let localOffset = offset - bufferOffset;
+        if (buffer.length - localOffset < Math.min(65536, file.size - offset)) {
+          bufferOffset = offset;
+          buffer = await readBytes(file, offset, Math.min(file.size, offset + readWindow));
+          localOffset = 0;
+        }
+        const blockSize = bgzfBlockSizeFromBytes(buffer, localOffset);
+        if (!blockSize || blockSize < 26) {
+          throw new Error(`Could not read BGZF block at byte ${offset.toLocaleString()}.`);
+        }
+        const block = buffer.subarray(localOffset, localOffset + blockSize);
+        if (block.length !== blockSize) {
+          throw new Error(`Incomplete BGZF block at byte ${offset.toLocaleString()}.`);
+        }
+        pendingBlocks.push(block);
+        if (pendingBlocks.length === 4) await consumePendingBlocks();
+        offset += blockSize;
+        blockCount++;
+        if (blockCount % 200 === 0) {
+          const pct = Math.min(100, offset / file.size * 100).toFixed(1);
+          setStatus(`Reading BGZF VCF locally... ${pct}% complete; ${blockCount.toLocaleString()} gzip blocks; ${parseSummary.variantLines.toLocaleString()} variant rows scanned; ${parseSummary.phasedHetSnvWithPs.toLocaleString()} phased SNVs with PS.`);
+          await nextFrame();
+        }
+      }
+
+      await consumePendingBlocks();
+      if (tracker.remainder) {
+        let line = tracker.remainder;
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        processVcfLine(line, state);
+      }
+      setStatus(`Finished BGZF parsing locally: ${parseSummary.variantLines.toLocaleString()} variant rows scanned; ${parseSummary.phasedHetSnvWithPs.toLocaleString()} phased heterozygous SNVs with PS found.`);
+    }
+
+    function parseExcluded(text) {
+      const out = [];
+      const lines = text.trim().split(/\r?\n/);
+      for (let i = 1; i < lines.length; i++) {
+        const f = lines[i].split(/\t|,/);
+        if (f.length >= 3) {
+          out.push({
+            chrom: canonicalChrom(f[0]),
+            start: Number(f[1]),
+            end: Number(f[2]),
+            type: f[3] || "excluded"
+          });
+        }
+      }
+      return out.filter(e => Number.isFinite(e.start) && Number.isFinite(e.end));
+    }
+
+    function visibleExcludedTsv(text) {
+      const lines = text.trim().split(/\r?\n/);
+      return lines.map((line, index) => {
+        const f = line.split(/\t|,/);
+        if (index === 0) return "chrom\tstart\tend\ttype";
+        return f.slice(0, 4).join("\t");
+      }).join("\n");
+    }
+
+    function chromOrder(chrom) {
+      const c = chrom.replace(/^chr/i, "");
+      if (/^\d+$/.test(c)) return Number(c);
+      if (c === "X") return 23;
+      if (c === "Y") return 24;
+      return 99;
+    }
+
+    function excludedRegionsByChrom(excluded) {
+      const out = new Map();
+      for (const e of excluded) {
+        if (!out.has(e.chrom)) out.set(e.chrom, []);
+        out.get(e.chrom).push({ start: e.start, end: e.end });
+      }
+      for (const [chrom, intervals] of out) {
+        intervals.sort((a, b) => a.start - b.start || a.end - b.end);
+        const merged = [];
+        for (const interval of intervals) {
+          const previous = merged[merged.length - 1];
+          if (previous && interval.start <= previous.end) previous.end = Math.max(previous.end, interval.end);
+          else merged.push({ ...interval });
+        }
+        out.set(chrom, merged);
+      }
+      return out;
+    }
+
+    function firstRegionEndingAtOrAfter(regions, pos) {
+      let low = 0, high = regions.length;
+      while (low < high) {
+        const mid = (low + high) >>> 1;
+        if (regions[mid].end < pos) low = mid + 1;
+        else high = mid;
+      }
+      return low;
+    }
+
+    function inExcluded(rec, excludedByChromMap) {
+      const regions = excludedByChromMap.get(rec.chrom);
+      if (!regions) return false;
+      const i = firstRegionEndingAtOrAfter(regions, rec.pos);
+      return i < regions.length && regions[i].start <= rec.pos;
+    }
+
+    function crossesExcludedInterval(chrom, start, end, excludedByChromMap) {
+      const regions = excludedByChromMap.get(chrom);
+      if (!regions) return false;
+      const a = Math.min(start, end), b = Math.max(start, end);
+      const i = firstRegionEndingAtOrAfter(regions, a);
+      return i < regions.length && regions[i].start <= b;
+    }
+
+    function orderedPhasedRecords() {
+      if (!orderedPhasedCache) orderedPhasedCache = PhaseBlocks.orderedPhasedRecords(records, true);
+      return orderedPhasedCache;
+    }
+
+    function aggregateBlocks(minVariants, excludedByChromMap) {
+      return PhaseBlocks.consecutiveBlocks(records, minVariants,
+        rec => inExcluded(rec, excludedByChromMap),
+        (chrom, start, end) => crossesExcludedInterval(chrom, start, end, excludedByChromMap),
+        orderedPhasedRecords())
+        .sort((a, b) => chromOrder(a.chrom) - chromOrder(b.chrom) || a.start - b.start);
+    }
+
+    function assignBlockColorIndexes(blocks) {
+      const nextIndex = new Map();
+      for (const block of blocks) {
+        const index = nextIndex.get(block.chrom) || 0;
+        block.colorIndex = index;
+        nextIndex.set(block.chrom, index + 1);
+      }
+      return blocks;
+    }
+
+    const autosomeChromCache = new Map();
+    function isAutosome(chrom) {
+      let autosome = autosomeChromCache.get(chrom);
+      if (autosome === undefined) {
+        autosome = /^([1-9]|1[0-9]|2[0-2])$/.test(displayChrom(chrom));
+        autosomeChromCache.set(chrom, autosome);
+      }
+      return autosome;
+    }
+
+    function isPrimaryChromosome(chrom, includeSex) {
+      const n = displayChrom(chrom);
+      if (/^([1-9]|1[0-9]|2[0-2])$/.test(n)) return true;
+      return includeSex && (n === "X" || n === "Y");
+    }
+
+    function displayedAutosomeCounts(excludedByChromMap, blocks) {
+      let phased = 0, unphased = 0, skipped = 0, missingPs = 0;
+      for (const r of records) {
+        if (!isAutosome(r.chrom)) continue;
+        if (inExcluded(r, excludedByChromMap)) { skipped++; continue; }
+        if (r.status === "phased") {
+          phased++;
+          if (!r.ps || r.ps === ".") missingPs++;
+        }
+        if (r.status === "unphased") unphased++;
+      }
+      return {
+        phased, unphased, skipped, missingPs,
+        validPhased: phased - missingPs,
+        het: phased + unphased,
+        blockCount: blocks.filter(b => isAutosome(b.chrom)).length
+      };
+    }
+
+    function setInputWarning(text) {
+      const banner = document.getElementById("inputWarning");
+      banner.textContent = text;
+      banner.hidden = !text;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    }
+
+    function noSelectedAutosomeMessage() {
+      if (parseSummary.autosomeVariantLines > 0 || !parseSummary.autosomeInputRows) return "";
+      const counts = Object.entries(parseSummary.autosomeFilterCounts)
+        .map(([filter, count]) => `FILTER=${filter}: ${count.toLocaleString()} rows`).join("; ");
+      return `No autosomal records selected: FILTER=PASS excluded all ${parseSummary.autosomeInputRows.toLocaleString()} autosomal VCF rows (${counts}). ` +
+        `Enable the “Include VCF records whose column 7 FILTER value is not PASS” option to include these records. ` +
+        `Statistics are unavailable for the current selection, rather than evidence of absent phasing.`;
+    }
+
+    function plotAnalysis(excludedText) {
+      if (plotAnalysisCache && plotAnalysisCache.excludedText === excludedText) return plotAnalysisCache;
+      statisticsCache = null;
+      const excluded = parseExcluded(excludedText);
+      const excludedMap = excludedRegionsByChrom(excluded);
+      const blocks = assignBlockColorIndexes(aggregateBlocks(MIN_VARIANTS, excludedMap));
+      plotAnalysisCache = {
+        excludedText, excluded, excludedMap, blocks,
+        counts: displayedAutosomeCounts(excludedMap, blocks),
+        centromereMap: centromeresByChrom(excluded),
+        telomereMap: telomeresByChrom(excluded)
+      };
+      return plotAnalysisCache;
+    }
+
+    function updatePlotSummary(blocks = [], excludedMap = new Map(), region = null) {
+      if (!loadedFileName) return;
+      const target = document.getElementById("plotSummary");
+      const item = (label, value, unit = "") => `<span class="summary-item">${escapeHtml(label)}: <strong>${value}</strong>${unit ? " " + unit : ""}</span>`;
+      const row = (...items) => `<div class="summary-row">${items.join("")}</div>`;
+      const number = value => Number.isFinite(value) ? Math.round(value).toLocaleString() : "N/A";
+      const bp = value => Number.isFinite(value) ? `${number(value)} bp` : "N/A";
+      const fileText = `<span class="summary-file">${escapeHtml(loadedFileName)}</span>`;
+      const filterText = useNonPassFilterRecords() ? "all FILTER values included" : "FILTER=PASS only";
+      const prefix = fileText + row(`<span class="summary-item"><strong>Autosomes only</strong></span>`,
+        `<span class="summary-item">Sample: <strong>${escapeHtml(parseSummary.sampleName)}</strong></span>`,
+        `<span class="summary-item">${filterText}</span>`);
+      setInputWarning("");
+      const noSelectedMessage = noSelectedAutosomeMessage();
+      if (noSelectedMessage) {
+        setInputWarning(noSelectedMessage);
+        target.innerHTML = prefix;
+        return;
+      }
+      if (!parseSummary.autosomeInputRows) {
+        setInputWarning("No autosomal records found. Statistics are limited to chromosomes 1–22.");
+        target.innerHTML = prefix;
+        return;
+      }
+      const counts = plotAnalysisCache && plotAnalysisCache.excludedMap === excludedMap &&
+        plotAnalysisCache.blocks === blocks ? plotAnalysisCache.counts : displayedAutosomeCounts(excludedMap, blocks);
+      const biallelic = parseSummary.autosomeBiallelicSnvLines - parseSummary.autosomeExcludedBiallelicSnvLines;
+      const inputCounts = row(item("Autosomal VCF records", number(parseSummary.autosomeVariantLines - parseSummary.autosomeExcludedVariantLines)),
+        item("Biallelic SNVs", number(biallelic)),
+        item("Heterozygous biallelic SNVs", number(counts.het)));
+      const plotInfo = row(item("Heterozygous SNVs in excluded regions", number(counts.skipped)));
+      if (!parseSummary.autosomeBiallelicSnvLines) {
+        setInputWarning("No autosomal biallelic SNVs selected. Phasing statistics are unavailable under the current FILTER setting.");
+        target.innerHTML = prefix + inputCounts;
+        return;
+      }
+      if (!counts.validPhased) {
+        if (!parseSummary.autosomeHetSnv) {
+          setInputWarning("No heterozygous biallelic SNVs were found on chromosomes 1–22. No phase blocks can be constructed.");
+        } else if (!parseSummary.autosomePhasedHetSnvWithPs) {
+          setInputWarning("No valid PS values were found.");
+        } else {
+          setInputWarning("No phased heterozygous SNVs with a valid PS remain outside excluded regions on chromosomes 1–22. No phase blocks can be constructed for the current selection; only basic counts are shown.");
+        }
+        target.innerHTML = prefix + inputCounts + plotInfo;
+        return;
+      }
+      if (counts.missingPs) {
+        setInputWarning(`${number(counts.missingPs)} phased heterozygous SNV${counts.missingPs === 1 ? "" : "s"} without a valid PS ${counts.missingPs === 1 ? "was" : "were"} excluded from phase-block statistics. Basic SNV counts include ${counts.missingPs === 1 ? "this record" : "these records"}.`);
+      }
+      if (!statisticsCache) {
+        statisticsCache = PhaseBlocks.segmentStats(blocks.filter(b => isAutosome(b.chrom)), headerContigLengths,
+          { biallelic, het: counts.het, unphased: counts.unphased, validPhased: counts.validPhased });
+      }
+      const st = statisticsCache;
+      const fraction = Number.isFinite(st.phased_fraction) ? `${(st.phased_fraction * 100).toFixed(3)}%` : "N/A";
+      const phaseCounts = row(item("Blocks", number(st.blocks)),
+        item("Phased heterozygous SNVs (total)", number(st.phased_total)),
+        item("Phased heterozygous SNVs (blocks ≥2 SNVs)", number(st.phased)),
+        item("Unphased heterozygous SNVs", number(st.unphased)), item("Phased fraction (of all heterozygous SNVs)", fraction));
+      const lengths = row(item("Mean block length", bp(st.bp_per_block_avg)),
+        item("Median block length", bp(st.bp_per_block_median)), item("Max block length", bp(st.bp_per_block_max)));
+      const continuity = row(item("Total block length", bp(st.bp_per_block_sum)),
+        item("N50", bp(st.length_n50)), item("NG50", bp(st.block_n50)));
+      const sizes = row(item("Mean block size", number(st.variant_per_block_avg), "SNVs"),
+        item("Median block size", number(st.variant_per_block_median), "SNVs"),
+        item("Max block size", number(st.variant_per_block_max), "SNVs"),
+        item("Total block size", number(st.variant_per_block_sum), "SNVs"));
+      const tickText = document.getElementById("showSnpTicks").checked ? "SNP side ticks shown" : "SNP side ticks hidden";
+      const sexText = region ? `Region view: ${region.chrom}:${region.startPos.toLocaleString()}–${region.endPos.toLocaleString()} of ${region.chromLength.toLocaleString()} bp` :
+        (document.getElementById("includeSexChromosomes").checked ? "X/Y shown" : "X/Y hidden");
+      const warningText = !counts.blockCount ?
+        `<span class="summary-warning">No phase-block segment with at least 2 SNVs remains after region exclusion.</span>` : "";
+      target.innerHTML = prefix + inputCounts + phaseCounts + lengths + continuity + sizes + plotInfo +
+        row(`<span class="summary-item">${sexText}; ${tickText}</span>`) + warningText;
+    }
+
+    function svgEl(tag, attrs) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+      return el;
+    }
+
+    function clamp(value, low, high) {
+      return Math.max(low, Math.min(high, value));
+    }
+
+    function posToY(pos, layout) {
+      const p = clamp(pos, layout.viewStart, layout.viewEnd);
+      if (!layout.isRegionView && layout.useVisualTelomereMapping) {
+        const topEnd = layout.topTelomereEnd;
+        const bottomStart = layout.bottomTelomereStart;
+        const topCapBottom = layout.y + layout.topTelomereVisualHeight;
+        const bottomCapTop = layout.bottom - layout.bottomTelomereVisualHeight;
+
+        if (Number.isFinite(topEnd) && p <= topEnd) {
+          const span = Math.max(1, topEnd - layout.viewStart);
+          return layout.y + (p - layout.viewStart) / span * layout.topTelomereVisualHeight;
+        }
+
+        if (Number.isFinite(bottomStart) && p >= bottomStart) {
+          const span = Math.max(1, layout.viewEnd - bottomStart);
+          return bottomCapTop + (p - bottomStart) / span * layout.bottomTelomereVisualHeight;
+        }
+
+        const innerStart = Number.isFinite(topEnd) ? topEnd : layout.viewStart;
+        const innerEnd = Number.isFinite(bottomStart) ? bottomStart : layout.viewEnd;
+        const innerYStart = Number.isFinite(topEnd) ? topCapBottom : layout.y;
+        const innerYEnd = Number.isFinite(bottomStart) ? bottomCapTop : layout.bottom;
+        const innerSpan = Math.max(1, innerEnd - innerStart);
+        return innerYStart + (p - innerStart) / innerSpan * (innerYEnd - innerYStart);
+      }
+      return layout.y + (p - layout.viewStart) / layout.viewSpan * layout.h;
+    }
+
+    function centromeresByChrom(excluded) {
+      const out = new Map();
+      for (const e of excluded) {
+        if (!String(e.type || "").toLowerCase().includes("centromere")) continue;
+        if (!out.has(e.chrom)) out.set(e.chrom, { start: e.start, end: e.end });
+        const c = out.get(e.chrom);
+        c.start = Math.min(c.start, e.start);
+        c.end = Math.max(c.end, e.end);
+      }
+      return out;
+    }
+
+    function telomeresByChrom(excluded) {
+      const out = new Map();
+      for (const e of excluded) {
+        if (!String(e.type || "").toLowerCase().includes("telomere")) continue;
+        if (!out.has(e.chrom)) out.set(e.chrom, { topEnd: null, bottomStart: null });
+        const t = out.get(e.chrom);
+        if (e.start <= 20000) {
+          t.topEnd = Math.max(t.topEnd ?? 0, e.end);
+        } else {
+          t.bottomStart = Math.min(t.bottomStart ?? e.start, e.start);
+        }
+      }
+      return out;
+    }
+
+    function chromosomePath(layout, centromere) {
+      const x = layout.x;
+      const y = layout.y;
+      const w = layout.w;
+      const h = layout.h;
+      const r = Math.min(w / 2, 7);
+      const topRounded = !layout.isRegionView && layout.viewStart <= 0;
+      const bottomRounded = !layout.isRegionView && layout.viewEnd >= layout.len - 1;
+
+      function leftTop() {
+        return topRounded ? [`M ${x + r} ${y}`, `Q ${x} ${y} ${x} ${y + r}`] : [`M ${x} ${y}`];
+      }
+
+      function leftBottom() {
+        return bottomRounded ? [`L ${x} ${y + h - r}`, `Q ${x} ${y + h} ${x + r} ${y + h}`] : [`L ${x} ${y + h}`, `L ${x + w} ${y + h}`];
+      }
+
+      function rightBottom() {
+        return bottomRounded ? [`L ${x + w - r} ${y + h}`, `Q ${x + w} ${y + h} ${x + w} ${y + h - r}`] : [];
+      }
+
+      function rightTop() {
+        return topRounded ? [`L ${x + w} ${y + r}`, `Q ${x + w} ${y} ${x + w - r} ${y}`] : [`L ${x + w} ${y}`];
+      }
+
+      if (!centromere) {
+        return [
+          ...leftTop(),
+          ...leftBottom(),
+          ...rightBottom(),
+          ...rightTop(),
+          "Z"
+        ].join(" ");
+      }
+
+      const centStart = Math.max(centromere.start, layout.viewStart);
+      const centEnd = Math.min(centromere.end, layout.viewEnd);
+      if (centStart >= centEnd) {
+        return [
+          ...leftTop(),
+          ...leftBottom(),
+          ...rightBottom(),
+          ...rightTop(),
+          "Z"
+        ].join(" ");
+      }
+
+      const centTopRaw = posToY(centEnd, layout);
+      const centBottomRaw = posToY(centStart, layout);
+      const minCentHeight = Math.max(10, h * 0.022);
+      const centTop = clamp(Math.min(centTopRaw, centBottomRaw), y + r + 3, y + h - r - minCentHeight - 3);
+      const centBottom = clamp(Math.max(centTopRaw, centBottomRaw), centTop + minCentHeight, y + h - r - 3);
+      const centMid = (centTop + centBottom) / 2;
+      const notch = Math.min(w * 0.42, 5.5);
+
+      return [
+        ...leftTop(),
+        `L ${x} ${centTop}`,
+        `L ${x + notch} ${centMid}`,
+        `L ${x} ${centBottom}`,
+        ...leftBottom(),
+        ...rightBottom(),
+        `L ${x + w} ${centBottom}`,
+        `L ${x + w - notch} ${centMid}`,
+        `L ${x + w} ${centTop}`,
+        ...rightTop(),
+        "Z"
+      ].join(" ");
+    }
+
+    function excludedDisplayRect(region, layout) {
+      const y1 = posToY(region.start, layout);
+      const y2 = posToY(region.end, layout);
+      return {
+        y: Math.min(y1, y2),
+        height: Math.max(2, Math.abs(y2 - y1))
+      };
+    }
+
+    function intervalsOverlap(startA, endA, startB, endB) {
+      return startA <= endB && endA >= startB;
+    }
+
+    function primaryChromosomes(includeSex = true) {
+      return [...contigs.keys()]
+        .filter(c => isPrimaryChromosome(c, includeSex))
+        .sort((a, b) => chromOrder(a) - chromOrder(b));
+    }
+
+    function updateRegionChromOptions() {
+      const select = document.getElementById("regionChrom");
+      const current = select.value || "chr1";
+      const chroms = primaryChromosomes(true);
+      select.replaceChildren();
+      for (const chrom of chroms) {
+        const option = document.createElement("option");
+        option.value = chrom;
+        option.textContent = chrom;
+        select.appendChild(option);
+      }
+      if (chroms.includes(current)) {
+        select.value = current;
+      } else if (chroms.length) {
+        select.value = chroms[0];
+      }
+      updateRegionMax(true);
+    }
+
+    function updateRegionMax(resetToFullChromosome = false) {
+      const chrom = canonicalChrom(document.getElementById("regionChrom").value || "chr1");
+      const len = contigs.get(chrom);
+      const startInput = document.getElementById("regionStartPos");
+      const endInput = document.getElementById("regionEndPos");
+      if (!len) return;
+      startInput.max = String(Math.max(0, len - 1));
+      endInput.max = String(len);
+      if (resetToFullChromosome || endInput.value === "") {
+        startInput.value = "0";
+        endInput.value = String(len);
+        return;
+      }
+      const startValue = Number(startInput.value);
+      const endValue = Number(endInput.value);
+      if (!Number.isFinite(startValue) || startValue < 0) startInput.value = "0";
+      if (!Number.isFinite(endValue) || endValue < 1) endInput.value = "1";
+      if (Number(endInput.value) > len) endInput.value = String(len);
+      if (Number(startInput.value) >= len) startInput.value = String(Math.max(0, len - 1));
+      if (Number(startInput.value) > Number(endInput.value)) startInput.value = String(Math.max(0, Number(endInput.value) - 1));
+    }
+
+    function updateRegionControlsVisibility() {
+      const enabled = document.getElementById("useRegionView").checked;
+      const controls = document.getElementById("regionControls");
+      controls.classList.toggle("is-visible", enabled);
+      controls.setAttribute("aria-hidden", enabled ? "false" : "true");
+    }
+
+    function parseRegionSelection() {
+      if (!document.getElementById("useRegionView").checked) return null;
+      const chrom = canonicalChrom(document.getElementById("regionChrom").value.trim());
+      const startPos = Number(document.getElementById("regionStartPos").value);
+      const endPos = Number(document.getElementById("regionEndPos").value);
+      const len = contigs.get(chrom);
+      if (!chrom || !Number.isFinite(startPos) || !Number.isFinite(endPos)) {
+        throw new Error("Please enter chromosome, start position, and end position for region view.");
+      }
+      if (!len) {
+        throw new Error(`Chromosome ${chrom} is not present in the loaded VCF header or records.`);
+      }
+      if (startPos > endPos) {
+        throw new Error("Region start must be before region end.");
+      }
+      let clippedStart = clamp(Math.max(0, startPos), 0, len - 1);
+      let clippedEnd = clamp(Math.max(1, endPos), 1, len);
+      if (endPos > len) {
+        document.getElementById("regionEndPos").value = String(len);
+      }
+      if (startPos >= len) {
+        document.getElementById("regionStartPos").value = String(Math.max(0, len - 1));
+      }
+      if (clippedStart > clippedEnd) clippedStart = Math.max(0, clippedEnd - 1);
+      return {
+        chrom,
+        startPos: clippedStart,
+        endPos: clippedEnd,
+        chromLength: len
+      };
+    }
+
+    function viewBoundsForChrom(chrom, region) {
+      const len = contigs.get(chrom);
+      if (!region) return { viewStart: 0, viewEnd: len };
+      let viewStart = region.startPos;
+      let viewEnd = region.endPos;
+      viewStart = clamp(viewStart, 0, len - 1);
+      viewEnd = clamp(viewEnd, viewStart + 1, len);
+      return { viewStart, viewEnd };
+    }
+
+    function selectedChromosomes(region) {
+      const includeSex = document.getElementById("includeSexChromosomes").checked;
+      return [...contigs.keys()]
+        .filter(c => {
+          if (region) {
+            return c === region.chrom;
+          }
+          return isPrimaryChromosome(c, includeSex);
+        })
+        .sort((a, b) => chromOrder(a) - chromOrder(b));
+    }
+
+    function drawSnvTicks(svg, layout, excludedMap, colors, regionMode, barW, blocks) {
+      // Reuse the full-view qualifying segments, including in selected-region views.
+      // Parsed SNVs are coordinate-ordered, so each segment cursor moves only forward.
+      const phasedSegments = new Map();
+      for (const block of blocks) {
+        let group = phasedSegments.get(block.chrom);
+        if (!group) {
+          group = { blocks: [], next: 0 };
+          phasedSegments.set(block.chrom, group);
+        }
+        group.blocks.push(block);
+      }
+      const batches = new Map();
+      function flush(batch) {
+        if (!batch.commands.length) return;
+        svg.appendChild(svgEl("path", {
+          d: batch.commands.join(""), fill: "none", stroke: batch.stroke,
+          "stroke-width": batch.width
+        }));
+        batch.commands = [];
+      }
+      for (const r of records) {
+        const l = layout.get(r.chrom);
+        if (!l || r.pos < l.viewStart || r.pos > l.viewEnd || inExcluded(r, excludedMap)) continue;
+        const unphased = r.status === "unphased";
+        if (!unphased) {
+          if (!r.ps || r.ps === ".") continue;
+          const group = phasedSegments.get(r.chrom);
+          if (!group) continue;
+          while (group.next < group.blocks.length && group.blocks[group.next].end < r.pos) group.next++;
+          const block = group.blocks[group.next];
+          if (!block || r.pos < block.start || r.ps !== block.ps) continue;
+        }
+        const key = r.chrom + (unphased ? ":u" : ":p");
+        let batch = batches.get(key);
+        if (!batch) {
+          batch = { commands: [], stroke: unphased ? colors.unphased : colors.phased,
+            width: unphased ? (regionMode ? 0.9 : 0.75) : (regionMode ? 0.75 : 0.55) };
+          batches.set(key, batch);
+        }
+        const y = posToY(r.pos, l);
+        const x1 = unphased ? l.x - (regionMode ? 24 : 10) : l.x + barW + (regionMode ? 4 : 2);
+        const x2 = unphased ? l.x - (regionMode ? 4 : 2) : l.x + barW + (regionMode ? 24 : 10);
+        batch.commands.push(`M${x1},${y}H${x2}`);
+        if (batch.commands.length >= 16384) flush(batch);
+      }
+      for (const batch of batches.values()) flush(batch);
+    }
+
+    function draw() {
+      const svg = document.getElementById("plot");
+      svg.replaceChildren();
+      setMessage("");
+      const colors = applyColorControls();
+      const { excluded, excludedMap, centromereMap, telomereMap, blocks } =
+        plotAnalysis(document.getElementById("excluded").value);
+      const showSnpTicks = document.getElementById("showSnpTicks").checked;
+      let region = null;
+      try {
+        region = parseRegionSelection();
+      } catch (error) {
+        setMessage(error.message || String(error));
+        return;
+      }
+      const chroms = selectedChromosomes(region);
+      if (!chroms.length) {
+        updatePlotSummary(blocks, excludedMap, region);
+        return;
+      }
+
+      const W = 1200, H = 700;
+      const left = 44, right = 1156, bottom = 640, top = 70;
+      const regionMode = Boolean(region);
+      const barW = regionMode ? (showSnpTicks ? 90 : 110) : (showSnpTicks ? 10 : 14);
+      const boundsByChrom = new Map(chroms.map(c => [c, viewBoundsForChrom(c, region)]));
+      const maxLen = Math.max(...chroms.map(c => boundsByChrom.get(c).viewEnd - boundsByChrom.get(c).viewStart));
+      const gap = chroms.length > 1 ? (right - left - barW * chroms.length) / (chroms.length - 1) : 0;
+      const xFor = (i) => regionMode ? (W - barW) / 2 : left + i * (barW + gap);
+      const layout = new Map();
+      const defs = svgEl("defs", {});
+      svg.appendChild(defs);
+
+      chroms.forEach((chrom, i) => {
+        const len = contigs.get(chrom);
+        const bounds = boundsByChrom.get(chrom);
+        const viewSpan = bounds.viewEnd - bounds.viewStart;
+        const h = Math.max(60, viewSpan / maxLen * (bottom - top));
+        const x = xFor(i), y = bottom - h;
+        const telomere = telomereMap.get(chrom) || {};
+        const topTelomereVisualHeight = Math.max(3, barW * 0.35);
+        const bottomTelomereVisualHeight = Math.max(3, barW * 0.35);
+        const topTelomereEnd = Number.isFinite(telomere.topEnd) && bounds.viewStart <= 0 ? telomere.topEnd : null;
+        const bottomTelomereStart = Number.isFinite(telomere.bottomStart) && bounds.viewEnd >= len - 1 ? telomere.bottomStart : null;
+        const useVisualTelomereMapping = !region && (
+          (Number.isFinite(topTelomereEnd) && topTelomereEnd > bounds.viewStart) ||
+          (Number.isFinite(bottomTelomereStart) && bottomTelomereStart < bounds.viewEnd)
+        );
+        const l = {
+          x,
+          y,
+          h,
+          len,
+          w: barW,
+          bottom,
+          viewStart: bounds.viewStart,
+          viewEnd: bounds.viewEnd,
+          viewSpan,
+          isRegionView: Boolean(region),
+          topTelomereEnd,
+          bottomTelomereStart,
+          topTelomereVisualHeight,
+          bottomTelomereVisualHeight,
+          useVisualTelomereMapping,
+          clipId: `chrom_clip_${i}`
+        };
+        l.path = chromosomePath(l, centromereMap.get(chrom));
+        layout.set(chrom, l);
+
+        const clip = svgEl("clipPath", { id: l.clipId });
+        clip.appendChild(svgEl("path", { d: l.path }));
+        defs.appendChild(clip);
+
+        svg.appendChild(svgEl("path", { d: l.path, fill: "white", stroke: "none" }));
+      });
+
+      let displayedBlocks = 0;
+      for (const block of blocks) {
+        const l = layout.get(block.chrom);
+        if (!l) continue;
+        if (!intervalsOverlap(block.start, block.end, l.viewStart, l.viewEnd)) continue;
+        displayedBlocks++;
+        const y1 = posToY(block.start, l);
+        const y2 = posToY(block.end, l);
+        const fill = block.colorIndex % 2 === 0 ? colors.block1 : colors.block2;
+        svg.appendChild(svgEl("rect", {
+          x: l.x + 1,
+          y: Math.min(y1, y2),
+          width: barW - 2,
+          height: Math.max(1, Math.abs(y2 - y1)),
+          fill,
+          "clip-path": `url(#${l.clipId})`
+        }));
+      }
+
+      if (showSnpTicks) drawSnvTicks(svg, layout, excludedMap, colors, regionMode, barW, blocks);
+
+      for (const e of excluded) {
+        const l = layout.get(e.chrom);
+        if (!l) continue;
+        if (!intervalsOverlap(e.start, e.end, l.viewStart, l.viewEnd)) continue;
+        const display = excludedDisplayRect(e, l);
+        svg.appendChild(svgEl("rect", {
+          x: l.x + 1,
+          y: display.y,
+          width: barW - 2,
+          height: display.height,
+          fill: colors.gray,
+          "clip-path": `url(#${l.clipId})`
+        }));
+      }
+
+      chroms.forEach((chrom) => {
+        const l = layout.get(chrom);
+        svg.appendChild(svgEl("path", { d: l.path, fill: "none", stroke: colors.outline, "stroke-width": 1.4, "stroke-linejoin": "round" }));
+        const t = svgEl("text", { x: l.x + barW / 2, y: bottom + 24, "text-anchor": "middle", "font-size": 12, "font-weight": 700, fill: colors.text });
+        t.textContent = displayChrom(chrom);
+        svg.appendChild(t);
+      });
+
+      updatePlotSummary(blocks, excludedMap, region);
+    }
+
+    async function redrawWithStatus(message = "Processing...") {
+      setStatus("Processing...");
+      await nextFrame();
+      await nextFrame();
+      draw();
+      setStatus("");
+    }
+
+    function safeFileStem(name) {
+      const base = name ? String(name).replace(/\.vcf.*$/i, "") : "PhaseLadderPlot";
+      return base.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_").trim().replace(/[. ]+$/g, "") || "PhaseLadderPlot";
+    }
+
+    function exportFileStem() {
+      return `${safeFileStem(loadedFileName)}_PLP`;
+    }
+
+    let titleBeforePdfExport = null;
+
+    function preparePdfFilename() {
+      if (titleBeforePdfExport === null) titleBeforePdfExport = document.title;
+      document.title = exportFileStem();
+    }
+
+    function restoreTitleAfterPdfExport() {
+      if (titleBeforePdfExport !== null) {
+        document.title = titleBeforePdfExport;
+        titleBeforePdfExport = null;
+      }
+    }
+
+    function saveCurrentPlotAsPdf() {
+      preparePdfFilename();
+      try {
+        window.print();
+      } catch (error) {
+        restoreTitleAfterPdfExport();
+        setMessage(`Could not open the print dialog: ${error.message || String(error)}`);
+      }
+    }
+
+    function wrapCanvasText(ctx, text, maxWidth) {
+      const words = String(text || "").split(/\s+/).filter(Boolean);
+      const lines = [];
+      let line = "";
+      for (const word of words) {
+        const test = line ? `${line} ${word}` : word;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = test;
+        }
+      }
+      if (line) lines.push(line);
+      return lines.length ? lines : [""];
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = src;
+      });
+    }
+
+    async function svgToImage(svg, width, height) {
+      const clone = svg.cloneNode(true);
+      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      clone.setAttribute("width", String(width));
+      clone.setAttribute("height", String(height));
+      const serialized = new XMLSerializer().serializeToString(clone);
+      const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      try {
+        return await loadImage(url);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    function summaryLinesForExport() {
+      const summary = document.getElementById("plotSummary");
+      const warning = document.getElementById("inputWarning");
+      const lines = [...summary.querySelectorAll(".summary-file, .summary-item, .summary-warning")]
+        .map(el => el.textContent.trim())
+        .filter(Boolean);
+      if (!warning.hidden && warning.textContent.trim()) lines.unshift(warning.textContent.trim());
+      return lines;
+    }
+
+    function drawExportLegend(ctx, x, y, colors) {
+      const items = [
+        { type: "line", color: colors.unphased, label: "Unphased 0/1" },
+        { type: "line", color: colors.phased, label: "Phased 0|1" },
+        { type: "box", color: colors.block1, label: "Block 1" },
+        { type: "box", color: colors.block2, label: "Block 2" },
+        { type: "box", color: colors.gray, label: "Excluded" }
+      ];
+      ctx.font = "16px Arial, Helvetica, sans-serif";
+      ctx.textBaseline = "middle";
+      let cursor = x;
+      for (const item of items) {
+        ctx.strokeStyle = item.color;
+        ctx.fillStyle = item.color;
+        if (item.type === "line") {
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(cursor, y);
+          ctx.lineTo(cursor + 48, y);
+          ctx.stroke();
+          cursor += 58;
+        } else {
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = "#9ca3af";
+          ctx.fillRect(cursor, y - 8, 26, 16);
+          ctx.strokeRect(cursor, y - 8, 26, 16);
+          cursor += 36;
+        }
+        ctx.fillStyle = "#374151";
+        ctx.fillText(item.label, cursor, y);
+        cursor += ctx.measureText(item.label).width + 28;
+      }
+      return cursor;
+    }
+
+    async function saveCurrentPlotAsPng() {
+      const svg = document.getElementById("plot");
+      if (!svg.children.length) {
+        setMessage("No plot is available to save as PNG yet.");
+        return;
+      }
+
+      try {
+        setStatus("Creating PNG...");
+        await nextFrame();
+        const colors = applyColorControls();
+        const viewBox = svg.viewBox.baseVal;
+        const scale = 2;
+        const exportWidth = 1400;
+        const margin = 56;
+        const summaryLineHeight = 22;
+        const summaryMaxWidth = exportWidth - margin * 2;
+        const measuringCanvas = document.createElement("canvas");
+        const measureCtx = measuringCanvas.getContext("2d");
+        measureCtx.font = "16px Arial, Helvetica, sans-serif";
+        const summaryTextLines = [];
+        for (const line of summaryLinesForExport()) {
+          const sampleLine = line.startsWith("Sample: ");
+          measureCtx.font = sampleLine ? "700 16px Arial, Helvetica, sans-serif" : "16px Arial, Helvetica, sans-serif";
+          const wrapped = wrapCanvasText(measureCtx, line, summaryMaxWidth);
+          for (const text of wrapped) summaryTextLines.push({ text, sampleLine });
+        }
+
+        const summaryHeight = Math.max(34, summaryTextLines.length * summaryLineHeight);
+        const plotW = exportWidth - margin * 2;
+        const plotH = Math.round(plotW * ((viewBox.height || 700) / (viewBox.width || 1200)));
+        const legendY = margin + 8;
+        const plotY = legendY + 30;
+        const summaryY = plotY + plotH + 32;
+        const bottomPadding = 40;
+        const exportHeight = summaryY + summaryHeight + bottomPadding;
+        const width = exportWidth * scale;
+        const height = exportHeight * scale;
+        const plotImage = await svgToImage(svg, viewBox.width || 1200, viewBox.height || 700);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.scale(scale, scale);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, exportWidth, exportHeight);
+
+        ctx.fillStyle = "#111827";
+        ctx.font = "16px Arial, Helvetica, sans-serif";
+        ctx.textBaseline = "top";
+        let y = summaryY;
+        summaryTextLines.forEach(({ text, sampleLine }, index) => {
+          if (sampleLine) {
+            const prefix = text.startsWith("Sample: ") ? "Sample: " : "";
+            ctx.font = "16px Arial, Helvetica, sans-serif";
+            if (prefix) ctx.fillText(prefix, margin, y);
+            const nameX = margin + ctx.measureText(prefix).width;
+            ctx.font = "700 16px Arial, Helvetica, sans-serif";
+            ctx.fillText(text.slice(prefix.length), nameX, y);
+          } else {
+            ctx.font = index === 0 ? "700 16px Arial, Helvetica, sans-serif" : "16px Arial, Helvetica, sans-serif";
+            ctx.fillText(text, margin, y);
+          }
+          y += summaryLineHeight;
+        });
+
+        drawExportLegend(ctx, margin, legendY, colors);
+        ctx.drawImage(plotImage, margin, plotY, plotW, plotH);
+
+        canvas.toBlob((pngBlob) => {
+          if (!pngBlob) {
+            setMessage("Could not create the PNG file in this browser.");
+            return;
+          }
+          const pngUrl = URL.createObjectURL(pngBlob);
+          const link = document.createElement("a");
+          link.href = pngUrl;
+          link.download = `${exportFileStem()}.png`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(pngUrl);
+          setMessage("");
+        }, "image/png");
+      } catch (error) {
+        setMessage(`Could not create the PNG file in this browser: ${error.message || String(error)}`);
+      } finally {
+        setStatus("");
+      }
+    }
+
+    let colorRedrawTimer = null;
+
+    function scheduleColorRedraw() {
+      window.clearTimeout(colorRedrawTimer);
+      colorRedrawTimer = window.setTimeout(async () => {
+        await redrawWithStatus("Applying color change. This may take some time for a whole-genome VCF.");
+      }, 350);
+    }
+
+    async function readFileAsText(file) {
+      if (file.name.toLowerCase().endsWith(".gz")) {
+        if (window.pako && typeof window.pako.ungzip === "function") {
+          setStatus("Reading compressed VCF locally...");
+          await nextFrame();
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          setStatus("Decompressing VCF locally...");
+          await nextFrame();
+          return window.pako.ungzip(bytes, { to: "string" });
+        }
+        throw new Error("This browser cannot decompress .vcf.gz locally. Please use an uncompressed .vcf file.");
+      }
+      setStatus("Reading plain-text VCF locally as a fallback...");
+      await nextFrame();
+      return await file.text();
+    }
+
+    async function parseFileInInputOrder(file) {
+      const isGzip = file.name.toLowerCase().endsWith(".gz");
+      if (isGzip) {
+        const bgzfBlockSize = await bgzfBlockSizeAt(file, 0);
+        if (bgzfBlockSize) {
+          setStatus("BGZF-compressed VCF detected. Reading BGZF blocks locally...");
+          await nextFrame();
+          await parseBgzfFile(file);
+          return;
+        }
+        if ("DecompressionStream" in window && "TextDecoderStream" in window) {
+          try {
+            setStatus("Streaming and decompressing ordinary gzip VCF locally...");
+            await nextFrame();
+            const stream = file.stream().pipeThrough(new DecompressionStream("gzip"));
+            await parseVcfStream(stream);
+            return;
+          } catch (error) {
+            if (error instanceof UnsortedVcfError) throw error;
+            setStatus("Browser gzip stream failed. Trying fallback gzip reader...");
+            await nextFrame();
+          }
+        }
+      } else if ("TextDecoderStream" in window && typeof file.stream === "function") {
+        setStatus("Streaming plain-text VCF locally. This avoids loading the entire file into memory...");
+        await nextFrame();
+        await parseVcfStream(file.stream());
+        return;
+      }
+      const text = await readFileAsText(file);
+      await parseVcf(text);
+    }
+
+    async function readVcfTextForSorting(file) {
+      if (!file.name.toLowerCase().endsWith(".gz") || !await bgzfBlockSizeAt(file, 0)) {
+        return readFileAsText(file);
+      }
+      // Some gzip libraries stop at the first BGZF member. Explicitly read every
+      // member so records spanning members are preserved during the rare retry.
+      const chunks = [];
+      let offset = 0, blockCount = 0;
+      while (offset < file.size) {
+        const size = await bgzfBlockSizeAt(file, offset);
+        if (!size || size < 26) throw new Error(`Could not read BGZF block at byte ${offset.toLocaleString()}.`);
+        const block = await readBytes(file, offset, Math.min(file.size, offset + size));
+        if (block.length !== size) throw new Error(`Incomplete BGZF block at byte ${offset.toLocaleString()}.`);
+        const compressedStart = 12 + getUint16LE(block, 10);
+        chunks.push(window.pako.inflateRaw(block.subarray(compressedStart, size - 8), { to: "string" }));
+        offset += size;
+        if (++blockCount % 200 === 0) {
+          setStatus(`Reading unsorted BGZF VCF for sorting... ${Math.min(100, offset / file.size * 100).toFixed(1)}% complete.`);
+          await nextFrame();
+        }
+      }
+      return chunks.join("");
+    }
+
+    // This path is used only after a coordinate reversal or chromosome re-entry
+    // has been detected. Re-read and sort complete VCF rows, preserving the first
+    // original row at duplicate positions and all genotype/counter semantics.
+    async function parseUnsortedVcf(file) {
+      setStatus("Unsorted VCF detected. Reading records for sorting locally...");
+      await nextFrame();
+      const text = await readVcfTextForSorting(file);
+      setStatus("Unsorted VCF detected. Sorting records locally...");
+      await nextFrame();
+      const headers = [], rows = [];
+      let start = 0, lineCount = 0;
+      while (start < text.length) {
+        let end = text.indexOf("\n", start);
+        if (end < 0) end = text.length;
+        let line = text.slice(start, end);
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        start = end + 1;
+        if (!line) continue;
+        if (line.charCodeAt(0) === 35) headers.push(line);
+        else {
+          const tab = line.indexOf("\t"), nextTab = line.indexOf("\t", tab + 1);
+          const chrom = canonicalChrom(tab < 0 ? line : line.slice(0, tab));
+          const pos = Number(line.slice(tab + 1, nextTab < 0 ? line.length : nextTab));
+          rows.push({ line, chrom, pos: Number.isFinite(pos) ? pos : Infinity });
+        }
+        if (++lineCount % 250000 === 0) await nextFrame();
+      }
+      // Array.sort is stable: equal CHROM/POS rows keep their input order.
+      rows.sort((a, b) => a.chrom.localeCompare(b.chrom) || a.pos - b.pos);
+      resetParsedVcf();
+      const state = { sampleIndex: -1 };
+      for (const line of headers) processVcfLine(line, state);
+      for (let i = 0; i < rows.length; i++) {
+        processVcfLine(rows[i].line, state);
+        if ((i + 1) % 250000 === 0) {
+          setStatus(`Processing sorted VCF locally... ${(i + 1).toLocaleString()} rows processed.`);
+          await nextFrame();
+        }
+      }
+      parseSummary.reorderedInput = true;
+      setStatus("Finished processing sorted VCF locally.");
+    }
+
+    async function parseFile(file) {
+      try {
+        await parseFileInInputOrder(file);
+      } catch (error) {
+        if (!(error instanceof UnsortedVcfError)) throw error;
+        await parseUnsortedVcf(file);
+      }
+    }
+
+    async function loadFile(file) {
+      if (!file) return;
+      try {
+        setMessage("");
+        setInputWarning("");
+        loadedFileObject = file;
+        loadedFileName = file.name;
+        document.getElementById("plotSummary").textContent = `Loading ${file.name}. The plot will appear here after local parsing finishes.`;
+        await parseFile(file);
+        updateRegionChromOptions();
+        draw();
+        setStatus("");
+      } catch (error) {
+        setInputWarning("VCF loading did not finish. Statistics are unavailable.");
+        document.getElementById("plotSummary").textContent = "Statistics unavailable: VCF loading did not finish.";
+        setMessage(`Could not read this file locally: ${error.message || String(error)} If this is a very large file, make sure it is fully downloaded from cloud storage. A bgzipped .vcf.gz usually works best; plain .vcf files are now streamed when the browser supports it.`);
+        setStatus("File loading stopped before a complete plot could be drawn.");
+      }
+    }
+
+    document.getElementById("vcfFile").addEventListener("change", async (event) => {
+      await loadFile(event.target.files[0]);
+    });
+
+    const dropZone = document.getElementById("dropZone");
+    for (const eventName of ["dragenter", "dragover", "dragleave", "drop"]) {
+      document.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      });
+    }
+    dropZone.addEventListener("click", (event) => {
+      if (event.target.id !== "vcfFile") document.getElementById("vcfFile").click();
+    });
+    dropZone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      dropZone.classList.add("dragging");
+    });
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragging");
+    });
+    dropZone.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      dropZone.classList.remove("dragging");
+      await loadFile(event.dataTransfer.files[0]);
+    });
+
+    document.getElementById("savePdfBtn").addEventListener("click", saveCurrentPlotAsPdf);
+    window.addEventListener("beforeprint", preparePdfFilename);
+    window.addEventListener("afterprint", restoreTitleAfterPdfExport);
+    document.getElementById("savePngBtn").addEventListener("click", saveCurrentPlotAsPng);
+    document.getElementById("includeNonPassFilter").addEventListener("change", async () => {
+      if (loadedFileObject) {
+        setStatus("Re-reading the VCF with the updated FILTER option...");
+        await nextFrame();
+        await loadFile(loadedFileObject);
+      }
+    });
+    document.getElementById("includeSexChromosomes").addEventListener("change", async () => {
+      await redrawWithStatus("Processing chromosome display option. This may take some time for a whole-genome VCF.");
+    });
+    document.getElementById("showSnpTicks").addEventListener("change", async () => {
+      await redrawWithStatus("Processing SNP side tick display. This may take some time for a whole-genome VCF.");
+    });
+    document.getElementById("useRegionView").addEventListener("change", async () => {
+      updateRegionControlsVisibility();
+      if (document.getElementById("useRegionView").checked) updateRegionMax(true);
+      await redrawWithStatus("Processing selected-region display. This may take some time for a whole-genome VCF.");
+    });
+    document.getElementById("regionChrom").addEventListener("change", async () => {
+      updateRegionMax(true);
+      await redrawWithStatus("Processing selected chromosome. This may take some time for a whole-genome VCF.");
+    });
+    for (const id of ["regionStartPos", "regionEndPos"]) {
+      document.getElementById(id).addEventListener("change", async () => {
+        updateRegionMax(false);
+        await redrawWithStatus("Processing selected region. This may take some time for a whole-genome VCF.");
+      });
+    }
+    for (const id of ["blockColor1", "blockColor2", "unphasedColor", "phasedColor"]) {
+      document.getElementById(id).addEventListener("input", scheduleColorRedraw);
+    }
+    document.getElementById("darkModeToggle").addEventListener("change", (event) => {
+      document.body.classList.toggle("dark-mode", event.target.checked);
+    });
+
+    document.getElementById("excluded").value = visibleExcludedTsv(DEFAULT_EXCLUDED_TSV);
+    updateRegionControlsVisibility();
+    setStatus("");
+  </script>
+</body>
+</html>
