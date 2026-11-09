@@ -1,1 +1,4 @@
 .DS_Store
+# Large example data are distributed as release assets
+Example_*.vcf.gz
+Example_*.vcf.gz.tbi

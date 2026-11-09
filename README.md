@@ -32,6 +32,15 @@ Open [https://keio-cmg.jp/PhaseLadderPlot/](https://keio-cmg.jp/PhaseLadderPlot/
 
 No installation or server is required. `index.html` also loads `phase-blocks.js`, `vendor/`, and `assets/` from the same folder, so keep the folder structure unchanged.
 
+## Example data
+
+`Example_HG002_Nanopore_UltraLong.vcf.gz` is an example VCF file for visualization with Phase Ladder Plot. As the file name indicates, it was obtained in house from Oxford Nanopore Technologies (ONT) ultra-long-read sequencing analysis of DNA from the HG002 sample.
+
+Because the file (about 279 MB) exceeds GitHub's per-file size limit, it is distributed as a release asset rather than in the repository itself. Download it from the [Releases page](https://github.com/medicalbioinfo/PhaseLadderPlot/releases/latest):
+
+- [`Example_HG002_Nanopore_UltraLong.vcf.gz`](https://github.com/medicalbioinfo/PhaseLadderPlot/releases/latest/download/Example_HG002_Nanopore_UltraLong.vcf.gz) (about 279 MB)
+- [`Example_HG002_Nanopore_UltraLong.vcf.gz.tbi`](https://github.com/medicalbioinfo/PhaseLadderPlot/releases/latest/download/Example_HG002_Nanopore_UltraLong.vcf.gz.tbi) (tabix index; not required by Phase Ladder Plot)
+
 ## Privacy
 
 VCF files are processed only within your browser and are never uploaded to any external server (this also applies to the web version).
