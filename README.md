@@ -10,6 +10,8 @@
 
 Phase Ladder Plot is a tool that takes a phased VCF file (a VCF file with PS tags) as input and visualizes phase blocks along the chromosomes.
 
+In addition to the chromosome-level visualization, it reports a range of phase-block statistics, such as the number of blocks, block N50 and NG50, median and total block length, the numbers of heterozygous and phased heterozygous SNVs, and the phased fraction.
+
 ## About the input file (VCF with PS tags)
 
 VCF files that have gone through a phasing step during analysis carry PS tags. Examples include the VCF files produced by typical long-read sequencing (ONT and PacBio) analysis pipelines.
