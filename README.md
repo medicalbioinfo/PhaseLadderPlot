@@ -57,3 +57,13 @@ VCF files are processed only within your browser and are never uploaded to any e
 ## Citation
 
 Details will be described in a forthcoming bioRxiv preprint (Qian E, Kosaki K, Miya F. bioRxiv 2026). A link will be added here once it is available.
+
+## License
+
+Copyright (C) 2026 Emi Qian, Kenjiro Kosaki, Fuyuki Miya
+
+Phase Ladder Plot code is provided under the GNU General Public License, either version 3 of the License, or (at your option) any later version (GPL-3.0-or-later). See [LICENSE](LICENSE) for the full text.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+The bundled [pako](https://github.com/nodeca/pako) library (`vendor/pako.min.js`) is distributed under its own MIT / Zlib license.

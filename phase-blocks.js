@@ -1,4 +1,7 @@
-/* Phase Ladder Plot: consecutive phase-block segments and statistics.
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright (C) 2026 Emi Qian, Kenjiro Kosaki, Fuyuki Miya
+ *
+ * Phase Ladder Plot: consecutive phase-block segments and statistics.
  * All block metrics use the same segments, after region exclusion.
  * Coordinate spans remain last POS - first POS (not inclusive lengths).
  */
