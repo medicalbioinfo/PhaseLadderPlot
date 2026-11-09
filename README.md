@@ -4,7 +4,7 @@
 
 # Phase Ladder Plot
 
-**Web version:** https://medicalbioinfo.github.io/PhaseLadderPlot/
+**Web version:** [https://keio-cmg.jp/PhaseLadderPlot/](https://keio-cmg.jp/PhaseLadderPlot/)
 
 ## Overview
 
@@ -23,7 +23,7 @@ Short-read VCF files do not carry PS tags, but PS tags can be added afterwards w
 
 ### 1. Use the web version
 
-Open https://medicalbioinfo.github.io/PhaseLadderPlot/ in a web browser, then drag and drop a VCF file onto the page (or select it with the file picker).
+Open [https://keio-cmg.jp/PhaseLadderPlot/](https://keio-cmg.jp/PhaseLadderPlot/) in a web browser, then drag and drop a VCF file onto the page (or select it with the file picker).
 
 ### 2. Use it locally
 
