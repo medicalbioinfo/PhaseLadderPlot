@@ -4,51 +4,43 @@
 
 # Phase Ladder Plot
 
-**Web 版:** https://medicalbioinfo.github.io/PhaseLadderPlot/
+**Web version:** https://medicalbioinfo.github.io/PhaseLadderPlot/
 
-## 概要
+## Overview
 
-PhaseLadderPlot は、phasing 済みの VCF ファイル（PS タグ付きの VCF ファイル）をインプットにして、phase block を染色体上に図示化するツールです。
+Phase Ladder Plot is a tool that takes a phased VCF file (a VCF file with PS tags) as input and visualizes phase blocks along the chromosomes.
 
-## 入力ファイル（PS タグ付き VCF）について
+## About the input file (VCF with PS tags)
 
-一般的なロングリードシーケンス（ONT および PacBio）の解析で出力される VCF ファイルなど、解析途中でフェージング処理を行った VCF ファイルには PS タグが付けられています。
+VCF files that have gone through a phasing step during analysis carry PS tags. Examples include the VCF files produced by typical long-read sequencing (ONT and PacBio) analysis pipelines.
 
-ショートリードの VCF ファイルには PS タグが付けられていませんが、[WhatsHap](https://whatshap.readthedocs.io/) などのフェージングソフトにより PS タグを後から付加することもできます。
+Short-read VCF files do not carry PS tags, but PS tags can be added afterwards with phasing software such as [WhatsHap](https://whatshap.readthedocs.io/).
 
-- 参照ゲノム: hg38（GRCh38）
-- 形式: 非圧縮の `.vcf` または gzip 圧縮の `.vcf.gz`
+- Reference genome: hg38 (GRCh38)
+- Format: uncompressed `.vcf` or gzip-compressed `.vcf.gz`
 
-## 使い方
+## Usage
 
-### 1. Web 版を使う
+### 1. Use the web version
 
-ブラウザで https://medicalbioinfo.github.io/PhaseLadderPlot/ を開き、VCF ファイルをドラッグ＆ドロップ（またはファイル選択）してください。
+Open https://medicalbioinfo.github.io/PhaseLadderPlot/ in a web browser, then drag and drop a VCF file onto the page (or select it with the file picker).
 
-### 2. ローカルで使う
+### 2. Use it locally
 
-1. このリポジトリを丸ごとダウンロードします（緑色の **Code** ボタン → **Download ZIP**、または `git clone https://github.com/medicalbioinfo/PhaseLadderPlot.git`）。
-2. ZIP を展開し、フォルダ内の **`index.html`** をブラウザで開くと PhaseLadderPlot が使えます。
+1. Download the whole repository (green **Code** button → **Download ZIP**, or `git clone https://github.com/medicalbioinfo/PhaseLadderPlot.git`).
+2. Unzip it and open **`index.html`** in a web browser to use Phase Ladder Plot.
 
-インストールやサーバーの起動は不要です。`index.html` と同じフォルダにある `phase-blocks.js`・`vendor/`・`assets/` も読み込むため、フォルダ構成は変えずにお使いください。
+No installation or server is required. `index.html` also loads `phase-blocks.js`, `vendor/`, and `assets/` from the same folder, so keep the folder structure unchanged.
 
-## プライバシー
+## Privacy
 
-VCF ファイルはブラウザ内でのみ処理され、外部のサーバーにアップロードされることはありません（Web 版でも同様です）。
+VCF files are processed only within your browser and are never uploaded to any external server (this also applies to the web version).
 
-## ファイル構成
+## Files
 
-| ファイル | 内容 |
+| File | Description |
 |---|---|
-| `index.html` | アプリ本体（画面・描画・VCF 読み込み） |
-| `phase-blocks.js` | phase block の分割と統計量（N50 / NG50 など）の計算 |
-| `vendor/pako.min.js` | `.vcf.gz` の展開に使う [pako](https://github.com/nodeca/pako)（MIT / Zlib ライセンス） |
-| `assets/PhaseLadderPlot_icon.png` | アイコン |
-
----
-
-## English summary
-
-Phase Ladder Plot visualizes phase blocks along chromosomes from a phased VCF (a VCF carrying PS tags) on hg38 (GRCh38). VCFs from typical long-read pipelines (ONT, PacBio) already carry PS tags; short-read VCFs can be phased afterwards with tools such as WhatsHap.
-
-Use it online at https://medicalbioinfo.github.io/PhaseLadderPlot/, or download this repository (Code → Download ZIP) and open `index.html` in a web browser. VCF data are processed locally in the browser and are never uploaded.
+| `index.html` | Main application (user interface, plotting, VCF loading) |
+| `phase-blocks.js` | Phase-block segmentation and statistics (N50, NG50, etc.) |
+| `vendor/pako.min.js` | [pako](https://github.com/nodeca/pako), used to decompress `.vcf.gz` (MIT / Zlib license) |
+| `assets/PhaseLadderPlot_icon.png` | Icon |
